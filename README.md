@@ -1,5 +1,14 @@
 # 电视媒体轮播 / TV Media Carousel
 
+## 直接下载
+
+- [Android APK 安装包（调试版）](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-1.0.0-debug.apk)
+- [完整工程源码 ZIP](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-source.zip)
+- [SHA-256 校验文件](downloads/SHA256SUMS.txt)
+
+安装包已编译并验证签名；尚未完成电视真机及 24 小时稳定性测试。
+
+
 Kotlin Android TV 工程，minSdk **23**，compileSdk / targetSdk **34**，无需 root。原生 View 遥控器界面，Media3 视频、Glide 图片、JSON 媒体索引、SAF U 盘目录和内置局域网 HTTP 服务。依赖下载只发生在开发构建时，安装后的播放和上传均不需要外网。
 
 ## 编译和安装

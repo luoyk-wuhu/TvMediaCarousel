@@ -1,0 +1,54 @@
+name: Publish existing v1.1.2 artifacts
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-v1.1.2.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'luoyk-wuhu/TvMediaCarousel' && github.event.head_commit.message == 'Publish precompiled v1.1.2 release (one-time)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Publish compiled artifacts without building or testing
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, urllib.request
+          repo = os.environ["GITHUB_REPOSITORY"]
+          commit = "4f8176ec77e71fb93d3ab90a5ac3fd3bacafc4ce"
+          tag = "v1.1.2"
+          title = "电视媒体轮播 v1.1.2｜遥控器与触控界面更新（调试版）"
+          notes = "## 更新内容\n\n### 遥控器修复\n- 顶部“媒体库 / 文件夹 / 播放设置 / 设备与上传”支持左右键直接切换内容。\n- 下键进入当前页操作区，上键从首个操作返回当前页签。\n- 修正旋转屏幕下方向键的反向映射，按界面阅读方向控制。\n- 金黄色高亮、白色边框和“当前焦点”提示；页面切换及列表刷新保留焦点，遥控器聚焦播放控制栏时不自动隐藏。\n\n### 界面与媒体管理\n- 删除设置密码和上传密码。\n- 支持本机、U 盘、SD 卡多文件夹选择、持久读授权、移除目录，以及直接播放 / 本地复制。\n- 触控卡片界面、分页缩略图、点选播放、上一项 / 暂停 / 下一项。\n- 手机上传页支持拖放、多选、总进度、取消及继续剩余文件，保留同源请求检查。\n\n## 下载与安装\n- 安装附件 `TvMediaCarousel-1.1.2-debug.apk`；Android 6.0 / API 23 及以上，targetSdk 34，versionCode 4。\n- `TvMediaCarousel-1.1.2-source.zip` 为完整工程源码；`SHA256SUMS-1.1.2.txt` 提供校验值。\n- 沿用 1.1.0 / 1.1.1 的调试签名配置。原 1.0.0 签名不同，不能直接覆盖；需保留数据时使用原 keystore 重建，卸载前先备份本地媒体。\n\n## 验证状态\n1.1.2 已成功编译。按用户要求，未运行单元测试、Lint、模拟器或实机测试；历史 1.1.0 测试结果不代表本版本已测试。\n\n局域网无密码上传开启后，可访问电视地址的设备能上传和删除本地媒体，可在 App 中关闭服务。\n\n源码提交：4f8176ec77e71fb93d3ab90a5ac3fd3bacafc4ce。"
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "release-v1.1.2"
+          root.mkdir(exist_ok=True)
+          names = ["TvMediaCarousel-1.1.2-debug.apk", "TvMediaCarousel-1.1.2-source.zip", "SHA256SUMS-1.1.2.txt"]
+          expected = {"TvMediaCarousel-1.1.2-debug.apk": "c6783216e3978d4853abd9256be038184bace975f1dba11b7cc4b5f29979b61f", "TvMediaCarousel-1.1.2-source.zip": "9fc17035e0c709766d184c4d108fc07d41923148420f174ad2b9b9755a8c49f2"}
+          for name in names:
+              data = urllib.request.urlopen(f"https://raw.githubusercontent.com/{repo}/{commit}/downloads/{name}", timeout=60).read()
+              if name in expected and hashlib.sha256(data).hexdigest() != expected[name]:
+                  raise RuntimeError("Artifact checksum mismatch: " + name)
+              (root / name).write_bytes(data)
+          notes_path = root / "release-notes.md"
+          notes_path.write_text(notes, encoding="utf-8")
+          def gh(*args):
+              return subprocess.run(["gh", *args, "--repo", repo], check=True, text=True, capture_output=True)
+          probe = subprocess.run(["gh", "release", "view", tag, "--repo", repo, "--json", "assets,isDraft,url"], text=True, capture_output=True)
+          if probe.returncode != 0:
+              print(gh("release", "create", tag, *[str(root / n) for n in names], "--draft", "--target", commit, "--title", title, "--notes-file", str(notes_path)).stdout)
+          else:
+              info = json.loads(probe.stdout)
+              assets = {a["name"]: a for a in info["assets"]}
+              for name in names:
+                  if name in assets:
+                      digest = assets[name].get("digest")
+                      if name not in expected or digest != "sha256:" + expected[name]:
+                          raise RuntimeError("Existing asset requires manual review: " + name)
+                  else:
+                      gh("release", "upload", tag, str(root / name))
+          print(gh("release", "edit", tag, "--draft=false", "--latest", "--title", title, "--notes-file", str(notes_path)).stdout)
+          print(gh("release", "view", tag, "--json", "url,assets,isDraft").stdout)
+          PY

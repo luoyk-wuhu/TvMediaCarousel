@@ -53,7 +53,8 @@ object MediaLibrary {
                 fun accept(uri:Uri,name:String,size:Long,modified:Long) {
                     val type=MediaItem.type(name) ?: return
                     if(++count>20000)return
-                    if(!visited.add(uri.toString()))return
+                    val identity=if(uri.scheme=="content")runCatching {"${uri.authority}:${android.provider.DocumentsContract.getDocumentId(uri)}"}.getOrDefault(uri.toString()) else uri.toString()
+                    if(!visited.add(identity))return
                     if(Config.bool("usbCopy",true)) {
                         val key=Config.hash("$uri:$size:$modified")
                         val destination=File(local,"usb_$key.${name.substringAfterLast('.').lowercase()}")
@@ -76,8 +77,9 @@ object MediaLibrary {
                         runCatching {if(f.isDirectory)walkDoc(f,depth+1) else if(f.isFile)accept(f.uri,n,f.length(),f.lastModified())}.onFailure {Logs.write("SAF 扫描失败: $it")}
                     }
                 }
-                val authorizedVolumes=context.contentResolver.persistedUriPermissions.mapNotNull {runCatching {android.provider.DocumentsContract.getTreeDocumentId(it.uri).substringBefore(':').lowercase()}.getOrNull()}.toSet()
-                context.contentResolver.persistedUriPermissions.filter {it.isReadPermission}.forEach {p->runCatching {DocumentFile.fromTreeUri(context,p.uri)?.let {walkDoc(it,0)}}.onFailure {Logs.write("授权目录不可用: $it")}}
+                val selected=MediaFolders.selected(context)
+                val authorizedVolumes=selected.mapNotNull {runCatching {android.provider.DocumentsContract.getTreeDocumentId(it).substringBefore(':').lowercase()}.getOrNull()}.toSet()
+                selected.forEach {uri->runCatching {DocumentFile.fromTreeUri(context,uri)?.let {walkDoc(it,0)}}.onFailure {Logs.write("授权目录不可用: $it")}}
                 fun walkFile(f:File,depth:Int) {
                     if(depth>12||count>20000)return
                     f.listFiles()?.forEach {v->
@@ -86,14 +88,14 @@ object MediaLibrary {
                     }
                 }
                 val roots=mutableSetOf<File>()
-                if(android.os.Build.VERSION.SDK_INT>=30) {
+                if(Config.bool("autoUsb",true)&&android.os.Build.VERSION.SDK_INT>=30) {
                     val manager=context.getSystemService(android.os.storage.StorageManager::class.java)
                     manager.storageVolumes.filter {it.isRemovable&&it.state==Environment.MEDIA_MOUNTED}.mapNotNullTo(roots) {it.directory}
                 }
-                File("/storage").listFiles()?.filter {it.name.matches(Regex("[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}"))&&it.canRead()}?.let {roots.addAll(it)}
+                if(Config.bool("autoUsb",true))File("/storage").listFiles()?.filter {it.name.matches(Regex("[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}"))&&it.canRead()}?.let {roots.addAll(it)}
                 roots.filter {it.name.lowercase() !in authorizedVolumes}.forEach {runCatching {walkFile(it,0)}.onFailure {Logs.write("挂载目录扫描失败: $it")}}
                 // MediaStore fallback for removable volumes visible to the current media permission grant.
-                if(android.os.Build.VERSION.SDK_INT>=29) {
+                if(Config.bool("autoUsb",true)&&android.os.Build.VERSION.SDK_INT>=29) {
                     runCatching {
                         android.provider.MediaStore.getExternalVolumeNames(context).filter {it!="external_primary" && it.lowercase() !in authorizedVolumes && roots.none {f->f.name.equals(it,true)}}.forEach {volume->
                             val collection=android.provider.MediaStore.Files.getContentUri(volume)

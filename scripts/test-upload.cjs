@@ -1,0 +1,15 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+const html=fs.readFileSync('app/src/main/assets/upload.html','utf8'),script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+function environment(outcomes=[]) {
+ const elements=new Map(),requests=[],uploads=[];
+ function element(){return {disabled:false,hidden:false,value:'',textContent:'',files:[],children:[],classList:{add(){},remove(){}},append(...n){this.children.push(...n)},replaceChildren(){this.children=[]},setAttribute(){},addEventListener(){},click(){}}}
+ const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element,querySelectorAll(){return []}};
+ class Xhr {open(m,u){this.url=u}setRequestHeader(k,v){assert.equal(k,'X-Requested-With');assert.equal(v,'TVCarousel')}upload={};send(f){uploads.push(f.name);const outcome=outcomes.shift()||200;if(outcome==='wait')return;queueMicrotask(()=>{this.status=outcome;this.responseText=outcome===200?'{}':'{"error":"测试网络失败"}';this.onload()})}abort(){this.onabort()}}
+ const context=vm.createContext({document,XMLHttpRequest:Xhr,confirm:()=>true,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({files:[],free:1e9,status:'ready'})}}});
+ vm.runInContext(script,context);return {elements,context,requests,uploads};
+}
+const tick=()=>new Promise(r=>setImmediate(r));
+test('passwordless list connects with same-origin marker',async()=>{const e=environment();await tick();assert.equal(e.requests[0].options.headers['X-Requested-With'],'TVCarousel');assert.equal(e.elements.get('connection').textContent,'●  已连接电视')});
+test('selection filters empty, oversized and unsupported files',async()=>{const e=environment();await tick();e.context.choose([{name:'valid.JPG',size:20},{name:'empty.png',size:0},{name:'bad.txt',size:1},{name:'huge.mp4',size:17*1024**3}]);assert.equal(e.elements.get('upload').disabled,false);assert.match(e.elements.get('selection').textContent,/1 个文件/);assert.match(e.elements.get('status').textContent,/已过滤/)});
+test('retry sends only files after confirmed success',async()=>{const e=environment([200,500,200]);await tick();e.context.choose([{name:'one.png',size:10},{name:'two.png',size:20}]);await e.elements.get('upload').onclick();assert.match(e.elements.get('status').textContent,/已完成 1/);await e.elements.get('upload').onclick();assert.deepEqual(e.uploads,['one.png','two.png','two.png']);assert.equal(e.elements.get('progress').value,100);assert.equal(e.elements.get('upload').disabled,true)});
+test('cancel leaves current file available for retry',async()=>{const e=environment(['wait',200]);await tick();e.context.choose([{name:'one.png',size:10}]);const run=e.elements.get('upload').onclick();e.elements.get('cancel').onclick();await run;assert.match(e.elements.get('status').textContent,/取消/);assert.equal(e.elements.get('upload').disabled,false);await e.elements.get('upload').onclick();assert.deepEqual(e.uploads,['one.png','one.png'])});

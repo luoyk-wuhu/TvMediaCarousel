@@ -1,0 +1,2 @@
+c6783216e3978d4853abd9256be038184bace975f1dba11b7cc4b5f29979b61f  TvMediaCarousel-1.1.2-debug.apk
+9fc17035e0c709766d184c4d108fc07d41923148420f174ad2b9b9755a8c49f2  TvMediaCarousel-1.1.2-source.zip

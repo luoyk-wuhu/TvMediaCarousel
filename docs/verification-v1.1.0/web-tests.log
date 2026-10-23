@@ -1,0 +1,12 @@
+✔ passwordless list connects with same-origin marker (6.3295ms)
+✔ selection filters empty, oversized and unsupported files (2.3408ms)
+✔ retry sends only files after confirmed success (3.4837ms)
+✔ cancel leaves current file available for retry (3.3472ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 261.6804

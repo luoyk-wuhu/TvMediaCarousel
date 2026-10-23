@@ -1,12 +1,16 @@
 # 电视媒体轮播 / TV Media Carousel
 
+当前版本 **1.1.2**：顶部页签使用遥控器左右键直接切换内容，修正旋转屏幕下的方向键，并保留高对比焦点提示。按用户要求仅编译，未运行测试；下方 1.1.0 验收结果为历史记录。详见 [遥控器修复说明](docs/REMOTE_FIXES_1.1.2.md)。
+
 ## 直接下载
 
-- [Android APK 安装包（调试版）](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-1.0.0-debug.apk)
-- [完整工程源码 ZIP](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-source.zip)
-- [SHA-256 校验文件](downloads/SHA256SUMS.txt)
+- [Android APK 安装包（调试版）](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-1.1.2-debug.apk)
+- [完整工程源码 ZIP](https://github.com/luoyk-wuhu/TvMediaCarousel/raw/refs/heads/main/downloads/TvMediaCarousel-1.1.2-source.zip)
+- [SHA-256 校验文件](downloads/SHA256SUMS-1.1.2.txt)
 
-安装包已编译并验证签名；尚未完成电视真机及 24 小时稳定性测试。
+1.1.0 已编译、验证签名并在 MuMu Android 15 完成自动化验收；尚未完成电视真机及 24 小时稳定性测试。产物位于仓库 downloads/。源码 ZIP 不重复包含 APK。
+
+注意：新调试签名与仓库原 1.0.0 APK 不同，不能直接覆盖原包。需要保留旧版本地媒体时，先备份或使用原 keystore 重新构建；卸载 App 会清除内部媒体。
 
 
 Kotlin Android TV 工程，minSdk **23**，compileSdk / targetSdk **34**，无需 root。原生 View 遥控器界面，Media3 视频、Glide 图片、JSON 媒体索引、SAF U 盘目录和内置局域网 HTTP 服务。依赖下载只发生在开发构建时，安装后的播放和上传均不需要外网。
@@ -22,16 +26,25 @@ printf 'sdk.dir=/your/android-sdk\n' > local.properties
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Windows 使用 `gradlew.bat`。首次构建需要访问 Google Maven、Maven Central 和 Gradle。Debug APK 使用调试证书；正式分发请在本机配置自己的 release keystore，切勿提交私钥。依赖版本固定在构建文件中。
+Windows 使用 `gradlew.bat`；AAPT2 在中文路径下可能链接失败，请使用英文工程 / SDK 路径或临时盘符映射，单纯关闭路径检查并不足以解决。首次构建需要访问 Google Maven、Maven Central 和 Gradle。Debug APK 使用调试证书；正式分发请在本机配置自己的 release keystore，切勿提交私钥。依赖版本固定在构建文件中。
+
+## 1.1.0 更新
+
+- 移除设置密码和上传密码，升级时清除旧凭据；设置、扫码上传均可直接进入。
+- 新增触控媒体工作台：媒体缩略图分页、点选播放、文件夹管理、播放设置、设备与上传四个页面。
+- 播放时轻触画面显示上一项、暂停 / 继续、下一项、媒体库入口；遥控器菜单键 / 长按确认仍可用。
+- 手动选择本机、U 盘、SD 卡文件夹，支持多个目录、持久读授权、移除目录与直接播放 / 本地复制。
+- 手动选择后关闭整盘发现，避免导入未选择目录；可自行重新开启自动发现。嵌套授权在单次扫描中去重。
+- 手机网页重新设计，支持拖放、多选、总进度、取消和继续剩余队列。继续队列只在当前页面有效，不支持单个文件断点续传。
 
 ## 首次使用
 
-1. 从电视应用列表打开“电视媒体轮播”，允许媒体读取权限；Android 13+ 还会请求通知权限。拒绝媒体权限仍可播放本地上传文件。
-2. 空库显示上传地址、首次设置 PIN 和操作提示。有媒体时按菜单键，或长按确认键 1.5 秒进入设置。首次 PIN 同时显示在首次登录页，每台安装随机生成六位数字。
-3. 设置内修改**设置 PIN**和**上传 PIN**，两者独立。设置 PIN 修改后不再显示初始提示；上传 PIN 可在受保护设置内查看。丢失设置 PIN 需通过系统清除 App 数据重置，这也会删除本地媒体。
-4. 连接与电视相同的 WiFi / 有线局域网，手机访问设置页的实际地址或扫码，输入上传 PIN 后连接。选择多个文件，点击上传。上传成功即加入播放列表；当前文件播放完后会播放新增文件。
-5. U 盘默认导入 App 内部私有目录。Android 11+ 推荐先在设置选择“授权 U 盘目录”，选中具体分区目录并授权。拔出 U 盘后本地副本继续播放。多 U 盘 / 分区可分别授权。
-6. 调整方向、图片秒数、排序、静音等；返回播放即应用，方向立即生效。播放页吞掉返回键，避免误退出。Home、系统设置和系统强制停止仍由 Android 管理，本 App 不是设备所有者 kiosk。
+1. 安装并打开“电视媒体轮播”。空库首页提供可触控的选择文件夹、媒体库入口。
+2. 点“选择媒体文件夹”，在系统选择器中选中具体目录并授予读权限。可添加多个文件夹，重启后保留授权。Android 11+ 无法授权存储根目录、Download 根目录或 Android/data 等系统受限目录，请选择媒体子目录。
+3. “文件夹”页可移除授权，选择复制到本地或直接播放。复制后拔盘仍可播放；直接模式需保持源设备连接。移除授权不删除原文件或已有本地副本。
+4. “媒体库”中点封面下方文件名可进入媒体操作并播放或删除本地副本；封面分页加载，每页最多 24 项。
+5. “设备与上传”页显示地址和二维码；同一局域网手机访问后无需密码，可上传、列出和删除本地媒体。关闭服务开关可停止访问。
+6. “播放设置”调整方向、图片秒数、排序、静音等。点“返回全屏播放”应用。播放中轻触显示控制栏，6 秒后自动隐藏，暂停时保持显示。
 
 ## U 盘和权限兼容
 
@@ -50,7 +63,7 @@ Windows 使用 `gradlew.bat`。首次构建需要访问 Google Maven、Maven Cen
 
 图片可设置 3–60 秒，顺序或随机，自然文件名 / 修改时间升序 / 加入时间排序，列表循环或播放一轮；单视频循环启用后会停留在当前视频。支持静音、适应屏幕 / 居中裁剪和可关闭的淡出 / 淡入。损坏文件跳过；整轮失败后等待 30 秒重试；视频连续 90 秒没有播放进度则跳过。
 
-四方向统一使用根布局旋转并交换 90° / 270° 的逻辑宽高，避免依赖电视是否允许 Activity 改变系统方向。视频用 TextureView；播放、空库、数字键盘和设置页面都在同一旋转容器中。方向键进行反向坐标映射。**系统权限框、系统文件选择器、系统设置和系统输入法由固件控制方向**，App 无权旋转这些外部界面。HTTP 网页不随电视旋转。
+四方向统一使用根布局旋转并交换 90° / 270° 的逻辑宽高，避免依赖电视是否允许 Activity 改变系统方向。视频用 TextureView；播放、空库、媒体工作台和设置页面都在同一旋转容器中。方向键始终按界面文字的阅读方向移动焦点，旋转显示不再交换左右 / 上下键。**系统权限框、系统文件选择器、系统设置和系统输入法由固件控制方向**，App 无权旋转这些外部界面。HTTP 网页不随电视旋转。
 
 ## 上传服务
 
@@ -58,8 +71,8 @@ Windows 使用 `gradlew.bat`。首次构建需要访问 Google Maven、Maven Cen
 - 仅绑定系统标记为 WiFi / Ethernet 网络上的私有 IPv4 地址，不绑定所有接口；网络切换每 10 秒检查并重新绑定。IPv6-only、访客 WiFi 终端隔离、VPN-only 网络暂不支持。
 - 网页使用 XMLHttpRequest 原始文件流，逐个上传并显示进度。服务使用 Long 长度和 128 KiB 缓冲区，单文件上限 16 GiB，预留 64 MiB 空间；支持超过 2 GiB 文件。临时 `.part` 不进入媒体库，中断即删除，提交前 `fsync`，重启清理遗留临时文件。
 - 仅接受已知 Content-Length 的原始文件请求，不支持 multipart / chunked / 断点续传。最多两个并发请求、两个排队连接；读空闲超时 60 秒。网页文件名通过 DOM textContent 展示，服务端随机生成存储文件名。
-- 页面本身可公开读取；列出文件、上传、删除、刷新 API 都需 X-PIN。五次认证失败后全局暂停认证 30 秒；设置 PIN 入口同样限流。检查 Host / Origin，拒绝跨站请求；不启用 CORS。
-- PIN 摘要用于验证；上传 PIN 为便于受保护设置页显示，也存放于 App 私有偏好中。PIN 和文件经 HTTP 明文传输，仅在可信内网使用。不提供公网映射 / UPnP。请勿在路由器上把该端口转发到公网。
+- 设置和上传均无密码。同一局域网中可连接此地址的设备可列出、上传、删除本地媒体。API 要求公开的 X-Requested-With: TVCarousel 标记，同时检查 Host / Origin，不启用 CORS，以拒绝其他网页的跨站请求；该标记不是身份认证。
+- 文件经 HTTP 明文传输，仅在可信内网使用。不提供公网映射 / UPnP。请勿在路由器上把该端口转发到公网。
 - 文件按扩展名接受，真实解码在电视端进行；伪装或损坏媒体会记录并跳过。未加入病毒扫描或浏览器视频转码。
 - 端口和上传开关由前台服务重新检查；设置返回播放后十秒内更新，关闭上传不会关闭轮播。
 
@@ -75,8 +88,8 @@ Activity 设置 `FLAG_KEEP_SCREEN_ON` 和沉浸模式。进程崩溃时写滚动
 
 ## 日志、界面和测试
 
-日志在 App 私有目录滚动保存：当前 / 上一份各约 1 MiB。设置可查看最近 60 KB，并通过系统文档选择器导出到 U 盘。服务器日志不记录 PIN。JSON 索引使用临时文件 rename 替换；索引异常时可通过扫描重建本地项目，原始上传文件名可能丢失。
+日志在 App 私有目录滚动保存：当前 / 上一份各约 1 MiB。设置可查看最近 60 KB，并通过系统文档选择器导出到 U 盘。JSON 索引使用临时文件 rename 替换；索引异常时可通过扫描重建本地项目，原始上传文件名可能丢失。
 
-页面说明见 [docs/SCREENS.md](docs/SCREENS.md)，技术设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，完整验收步骤见 [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md)，实际构建结果见 [docs/BUILD_REPORT.md](docs/BUILD_REPORT.md)。本项目没有随附目标电视实拍截图。
+页面说明见 [docs/SCREENS.md](docs/SCREENS.md)，技术设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，完整验收步骤见 [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md)，实际构建结果见 [docs/BUILD_REPORT.md](docs/BUILD_REPORT.md)。MuMu 测试记录与截图见构建报告；上传页预览截图使用本地测试数据，不是真实电视媒体。
 
 本地单元测试覆盖自然排序大整数 / 前导零、超过 2 GiB 的定长流、截断上传、边界读取和空间不足。**构建通过不代表完成 Android 6 / 9+ 真机验收或 24 小时 / 7×24 小时稳定性认证**；这些需部署到实际设备后记录。

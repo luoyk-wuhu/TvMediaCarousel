@@ -6,15 +6,18 @@ app/src/main/java/com/tvcarousel/
   player/PlayerActivity.kt   View + Glide + Media3，前后台资源释放
   media/MediaItem.kt         数据模型和自然排序
   media/MediaLibrary.kt      串行扫描、复制、JSON 索引、主线程变更通知
+  media/MediaFolders.kt      持久目录读权限、移除和显式目录范围
+  ui/TouchUi.kt              原生卡片、触控按钮和遥控器焦点
+  upload/RequestPolicy.kt    无密码 API 的跨站请求拦截
   usb/UsbMonitor.kt          挂载、弹出、卸载等系统广播
-  upload/LanServer.kt        有界线程池 HTTP/1.1 服务，身份和请求校验
+  upload/LanServer.kt        有界线程池 HTTP/1.1 服务，同源请求校验
   upload/StreamTransfer.kt   Long 计数固定缓冲区流式传输
-  settings/Config.kt         SharedPreferences 和 PIN 校验
-  settings/SettingsActivity.kt 遥控器数字键盘、焦点、SAF 和系统设置入口
+  settings/Config.kt         SharedPreferences 和旧凭据清理
+  settings/SettingsActivity.kt 触控卡片工作台、媒体预览、SAF 和系统设置入口
   boot/BootReceiver.kt       开机启动入口
   boot/CarouselService.kt    前台通知、USB 监听、网络和端口重试
   boot/Recovery.kt           限流的崩溃恢复闹钟
-  orientation/RotatingActivity.kt 根容器旋转、尺寸和方向键映射
+  orientation/RotatingActivity.kt 根容器旋转与尺寸；方向键保持内容坐标
   logs/Logs.kt               有界滚动日志
 app/src/main/assets/upload.html 手机上传和管理网页
 app/src/test/java/com/tvcarousel/CoreTests.kt 关键算法及传输测试
@@ -28,7 +31,7 @@ app/src/test/java/com/tvcarousel/CoreTests.kt 关键算法及传输测试
 flowchart LR
     USB[U 盘 / SAF / MediaStore] --> Scan[后台串行扫描]
     Scan --> Cache[本地缓存或外部 URI]
-    Web[手机浏览器] --> HTTP[LAN HTTP + PIN]
+    Web[手机浏览器] --> HTTP[LAN HTTP + 同源检查]
     HTTP --> Temp[临时文件 / 流式写入]
     Temp --> Commit[完成校验 / 原子提交]
     Cache --> Index[媒体库 JSON / 不可变快照]
@@ -47,7 +50,7 @@ Activity onStart 创建播放器并监听媒体变化；onStop 清理 Handler、
 
 服务在 onCreate 立即前台化，再启动网络和 USB 工作。网络断开关闭监听 Socket 和客户端连接，未完成上传清理；换 IP 自动重绑。广播合并短时间重复扫描请求，并在正在扫描时保留后续重扫请求。主线程不递归读取文件。
 
-方向统一根布局旋转，90/270 度交换测量宽高，并反向映射 D-pad。TextureView 支持容器旋转；比例显示交给 ImageView / PlayerView，旋转不改写源媒体。
+方向统一根布局旋转，90/270 度交换测量宽高，D-pad 按内容布局方向移动，不反向映射。TextureView 支持容器旋转；比例显示交给 ImageView / PlayerView，旋转不改写源媒体。
 
 ## 有意保留的边界
 

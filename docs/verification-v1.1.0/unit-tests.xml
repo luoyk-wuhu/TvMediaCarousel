@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.tvcarousel.CoreTests" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-23T13:46:46" hostname="移动机动作战中" time="0.147">
+  <properties/>
+  <testcase name="passwordlessApiAcceptsSameOriginWithoutPin" classname="com.tvcarousel.CoreTests" time="0.01"/>
+  <testcase name="interruptedUploadsFail" classname="com.tvcarousel.CoreTests" time="0.013"/>
+  <testcase name="streamsBeyondTwoGiBWithBoundedBuffers" classname="com.tvcarousel.CoreTests" time="0.009"/>
+  <testcase name="diskSpaceFailureStopsTransfer" classname="com.tvcarousel.CoreTests" time="0.003"/>
+  <testcase name="filenamesWithHugeNumbersSortWithoutOverflow" classname="com.tvcarousel.CoreTests" time="0.097"/>
+  <testcase name="receiverReadsOnlyDeclaredLength" classname="com.tvcarousel.CoreTests" time="0.004"/>
+  <testcase name="passwordlessApiRejectsCrossSiteAndSimpleRequests" classname="com.tvcarousel.CoreTests" time="0.001"/>
+  <testcase name="leadingZerosAndMixedCaseHaveDeterministicOrder" classname="com.tvcarousel.CoreTests" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

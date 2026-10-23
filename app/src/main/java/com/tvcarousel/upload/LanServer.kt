@@ -20,8 +20,6 @@ class LanServer(private val context:Context,private val ip:String,requestedPort:
     private val clients=java.util.Collections.newSetFromMap(ConcurrentHashMap<Socket,Boolean>())
     private val pool=ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,ArrayBlockingQueue(2))
     @Volatile private var running=true
-    private var failures=0
-    private var blockedUntil=0L
     val port:Int
     init {
         server.reuseAddress=true
@@ -33,7 +31,7 @@ class LanServer(private val context:Context,private val ip:String,requestedPort:
         UploadStatus.address="http://$ip:$port";UploadStatus.detail=if(port==requestedPort)"上传服务运行中" else "端口冲突，已改用 $port"
         Thread({while(running) {try {
             val s=server.accept();s.soTimeout=60000;clients.add(s)
-            try {pool.execute {s.use {handle(it)};clients.remove(s)}} catch(e:RejectedExecutionException) {clients.remove(s);s.close()}
+            try {pool.execute {try {s.use {handle(it)}} finally {clients.remove(s)}}} catch(e:RejectedExecutionException) {clients.remove(s);s.close()}
         } catch(e:IOException) {if(running)Logs.write("HTTP 接入失败: $e")}}},"lan-accept").start()
     }
     fun close() {running=false;runCatching {server.close()};clients.forEach {runCatching {it.close()}};pool.shutdownNow()}
@@ -42,11 +40,6 @@ class LanServer(private val context:Context,private val ip:String,requestedPort:
         val b=ByteArrayOutputStream()
         while(true) {val c=input.read();if(c<0)throw EOFException();if(c==10)break;if(b.size()>=max)throw HttpError(431,"请求头过长");b.write(c)}
         return b.toString("UTF-8").trimEnd('\r')
-    }
-    @Synchronized private fun auth(pin:String):Boolean {
-        if(System.currentTimeMillis()<blockedUntil)return false
-        if(Config.verify("uploadPin",pin)) {failures=0;return true}
-        if(++failures>=5) {blockedUntil=System.currentTimeMillis()+30000;failures=0};return false
     }
     private fun handle(s:Socket) {
         try {
@@ -63,7 +56,7 @@ class LanServer(private val context:Context,private val ip:String,requestedPort:
             if(headers["host"]!=host)throw HttpError(403,"请使用电视显示的 IP 地址访问")
             if(headers["origin"]!=null&&headers["origin"]!="http://$host")throw HttpError(403,"跨站请求已拒绝")
             if(method=="GET"&&path=="/") {respond(s,200,context.assets.open("upload.html").use {it.readBytes()},"text/html; charset=utf-8");return}
-            if(!auth(headers["x-pin"] ?: ""))throw HttpError(401,"PIN 错误，连续失败后请等待 30 秒")
+            if(!RequestPolicy.allowed(headers["host"],headers["origin"],headers["x-requested-with"],host))throw HttpError(403,"请使用本机上传页面操作")
             val params=target.rawQuery?.split('&')?.associate {val p=it.split('=',limit=2);URLDecoder.decode(p[0],"UTF-8") to URLDecoder.decode(p.getOrElse(1){""},"UTF-8")} ?: emptyMap()
             when {
                 method=="GET"&&path=="/api/files" -> json(s,JSONObject().put("files",JSONArray().apply {MediaLibrary.items.filter {it.source=="local"}.forEach {put(it.json().apply {remove("uri")})}}).put("free",MediaLibrary.local.usableSpace).put("status",MediaLibrary.status))

@@ -1,11 +1,21 @@
 package com.tvcarousel
 import com.tvcarousel.media.NaturalOrder
 import com.tvcarousel.upload.StreamTransfer
+import com.tvcarousel.upload.RequestPolicy
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.*
 
 class CoreTests {
+    @Test fun passwordlessApiAcceptsSameOriginWithoutPin() {
+        assertTrue(RequestPolicy.allowed("192.168.1.2:8080","http://192.168.1.2:8080","TVCarousel","192.168.1.2:8080"))
+        assertTrue(RequestPolicy.allowed("192.168.1.2:8080",null,"TVCarousel","192.168.1.2:8080"))
+    }
+    @Test fun passwordlessApiRejectsCrossSiteAndSimpleRequests() {
+        assertFalse(RequestPolicy.allowed("192.168.1.2:8080","https://evil.example","TVCarousel","192.168.1.2:8080"))
+        assertFalse(RequestPolicy.allowed("evil.example",null,"TVCarousel","192.168.1.2:8080"))
+        assertFalse(RequestPolicy.allowed("192.168.1.2:8080",null,null,"192.168.1.2:8080"))
+    }
     @Test fun filenamesWithHugeNumbersSortWithoutOverflow() {
         val names=listOf("10.jpg","2.jpg","1.jpg","999999999999999999999999999.jpg","1000000000000000000000000000.jpg")
         assertEquals(listOf("1.jpg","2.jpg","10.jpg","999999999999999999999999999.jpg","1000000000000000000000000000.jpg"),names.sortedWith(NaturalOrder))

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.tvcarousel.CoreTests" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-23T10:31:04" hostname="a73d5f95a64f" time="0.07">
+  <properties/>
+  <testcase name="interruptedUploadsFail" classname="com.tvcarousel.CoreTests" time="0.013"/>
+  <testcase name="streamsBeyondTwoGiBWithBoundedBuffers" classname="com.tvcarousel.CoreTests" time="0.004"/>
+  <testcase name="diskSpaceFailureStopsTransfer" classname="com.tvcarousel.CoreTests" time="0.001"/>
+  <testcase name="filenamesWithHugeNumbersSortWithoutOverflow" classname="com.tvcarousel.CoreTests" time="0.039"/>
+  <testcase name="receiverReadsOnlyDeclaredLength" classname="com.tvcarousel.CoreTests" time="0.002"/>
+  <testcase name="leadingZerosAndMixedCaseHaveDeterministicOrder" classname="com.tvcarousel.CoreTests" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
